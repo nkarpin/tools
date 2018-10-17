@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from deb_pkg_tools.control import deb822_from_string,parse_control_fields
 import requests
@@ -30,41 +30,36 @@ pkgs_str2 = gzip.open(file2, 'rb').read()
 parsed_pkgs_fields1 = []
 parsed_pkgs_fields2 = []
 
-
-for i in pkgs_str1.split('\n\n'):
+for i in pkgs_str1.strip().split('\n\n'):
     parsed_pkgs_fields1.append(parse_control_fields(deb822_from_string(i)))
 
-
-for i in pkgs_str2.split('\n\n'):
+for i in pkgs_str2.strip().split('\n\n'):
     parsed_pkgs_fields2.append(parse_control_fields(deb822_from_string(i)))
 
 packages1 = {}
 packages2 = {}
 
 for i in parsed_pkgs_fields1:
-    if i.get('Package'):
-        if i['Package'] in packages1.keys():
-            packages1[i['Package']].append(i['Version'])
-        else:
-            packages1[i['Package']] = [i['Version']]
+    if i['Package'] in packages1.keys():
+        packages1[i['Package']].append(i['Version'])
     else:
-        print("No 'Package' field in package %s in repo %s" % (i,repo1))
+        packages1[i['Package']] = [i['Version']]
 
 for i in parsed_pkgs_fields2:
-    if i.get('Package'):
-        if i['Package'] in packages2.keys():
-            packages2[i['Package']].append(i['Version'])
-        else:
-            packages2[i['Package']] = [i['Version']]
+    if i['Package'] in packages2.keys():
+        packages2[i['Package']].append(i['Version'])
     else:
-        print("No 'Package' field in package %s in repo %s" % (i,repo2))
+        packages2[i['Package']] = [i['Version']]
 
+repo1_diff = set(packages1.keys()) - set(packages2.keys())
+repo2_diff = set(packages2.keys()) - set(packages1.keys())
 
-if len(packages1.keys()) != len(packages2.keys()):
-    print('Repositories have different lists of packages')
-    #print('Repo1 pkgs list %s')
+if repo1_diff:
+    print("Repo 2 has no packages: %s" % (repo1_diff))
 
-#print packages1
+if repo2_diff:
+    print("Repo 1 has no packages: %s" % (repo2_diff))
+
 diff = {}
 
 for k,v in packages1.iteritems():
@@ -78,8 +73,6 @@ for k,v in packages1.iteritems():
                         diff[k].update({repo1:[i]})
                 else:
                     diff[k] = {repo1:[i]}
-    else:
-        print("Repo %s has no package %s " % (repo2,k))
 
 for k,v in packages2.iteritems():
     if packages1.get(k):
@@ -92,8 +85,6 @@ for k,v in packages2.iteritems():
                         diff[k].update({repo2:[i]})
                 else:
                     diff[k] = {repo2:[i]}
-    else:
-        print("Repo %s has no package %s " % (repo1,k))
 
 if diff:
     for k,v in diff.iteritems():
