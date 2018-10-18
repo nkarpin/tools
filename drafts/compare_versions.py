@@ -5,6 +5,15 @@ import requests
 import gzip
 import sys
 
+def get_packages(parsed):
+    packages = {}
+    for i in parsed:
+        if i['Package'] in packages.keys():
+            packages[i['Package']].append(i['Version'])
+        else:
+            packages[i['Package']] = [i['Version']]
+    return packages
+
 dist_version = sys.argv[1]
 os_version = sys.argv[2]
 mcp_rev = sys.argv[3]
@@ -36,20 +45,8 @@ for i in pkgs_str1.strip().split('\n\n'):
 for i in pkgs_str2.strip().split('\n\n'):
     parsed_pkgs_fields2.append(parse_control_fields(deb822_from_string(i)))
 
-packages1 = {}
-packages2 = {}
-
-for i in parsed_pkgs_fields1:
-    if i['Package'] in packages1.keys():
-        packages1[i['Package']].append(i['Version'])
-    else:
-        packages1[i['Package']] = [i['Version']]
-
-for i in parsed_pkgs_fields2:
-    if i['Package'] in packages2.keys():
-        packages2[i['Package']].append(i['Version'])
-    else:
-        packages2[i['Package']] = [i['Version']]
+packages1 = get_packages(parsed_pkgs_fields1)
+packages2 = get_packages(parsed_pkgs_fields2)
 
 repo1_diff = set(packages1.keys()) - set(packages2.keys())
 repo2_diff = set(packages2.keys()) - set(packages1.keys())
@@ -91,5 +88,3 @@ if diff:
         print("Package %s have next versions %s" % (k,v))
 else:
     print("All packages and version are the same")
-
-
