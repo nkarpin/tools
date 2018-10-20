@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from deb_pkg_tools.control import deb822_from_string,parse_control_fields
+from deb_pkg_tools.version import Version
 import requests
 import gzip
 import sys
@@ -34,6 +35,11 @@ def get_versions_diff(packages1, packages2, repo1, repo2):
     print("Comparing repo1 - %s and repo2 - %s" % (repo1,repo2))
     pkgs = set(packages1.keys()).intersection(packages2.keys())
     for k in pkgs:
+        # TODO: Get difference by highest version
+        # sorted1 = (sorted(Version(s) for s in packages1[k]))
+        # sorted2 = (sorted(Version(s) for s in packages1[k]))
+
+        # Get overall defference
         repo1_pkg_diff = set(packages1[k]) - set(packages2[k])
         repo2_pkg_diff = set(packages2[k]) - set(packages1[k])
         if repo1_pkg_diff or repo2_pkg_diff:
@@ -50,6 +56,9 @@ mcp_rev = sys.argv[3]
 
 repo1 = 'http://mirror.mirantis.com/%s/openstack-%s/%s/dists/%s/main/binary-amd64' % (mcp_rev,os_version,dist_version,dist_version)
 repo2 = 'http://apt.mirantis.com/%s/openstack/%s/dists/%s/main/binary-amd64' % (dist_version,os_version,mcp_rev)
+
+# repo1 = 'http://mirror.mirantis.com/nightly/salt-formulas/xenial/dists/xenial/main/binary-amd64'
+# repo2 = 'http://apt.mirantis.com/xenial/dists/testing/salt/binary-amd64'
 
 file1 = get_packages_gz(repo1)
 file2 = get_packages_gz(repo2)
