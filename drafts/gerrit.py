@@ -6,7 +6,7 @@ from pprint import pprint
 import time
 from datetime import timedelta, date
 from collections import OrderedDict
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from operator import itemgetter
 import argparse
 
