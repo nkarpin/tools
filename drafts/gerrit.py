@@ -33,8 +33,9 @@ client = GerritSSHClient("review")
 openstack_projects = ['nova','cinder','glance','keystone','horizon','neutron','designate','heat','ironic','barbican', 'aodh', 'ceilometer', 'gnocchi', 'panko', 'manila', 'salt', 'linux', 'reclass', 'galera', 'memcached', 'rabbitmq', 'bind', 'apache', 'runtest', 'oslo-templates', 'auditd', 'octavia', 'openscap']
 openstack_salt_formulas = ['salt-formulas/{}'.format(i) for i in openstack_projects]
 pkg_projects = ['^packaging/specs/.*']
+aio_model = ['salt-models/mcp-virtual-aio']
 model_projects = ['mk/cookiecutter-templates','salt-models/reclass-system']
-projects = openstack_salt_formulas + pkg_projects + model_projects
+projects = openstack_salt_formulas + pkg_projects + model_projects + aio_model
 #projects = ['salt-formulas/nova']
 
 data = {}
@@ -71,17 +72,37 @@ print stat0
 # Patch sets per day over all projects
 stats_days = OrderedDict()
 period_sum = 0
-apd = 0
+pfpd = 0
 mpd = 0
-aio_ds = 0
+ppd = 0
+fpd = 0
+pf_ds = 0
 m_ds = 0
+p_ds = 0
+f_ds = 0
+cpd = 0
+c_ds = 0
+rpd = 0
+r_ds = 0
 for d in days:
     stats_days[d] = 0
     for p in projects:
         if stats[p][d] > 0:
-            if p in openstack_salt_formulas + pkg_projects:
-                apd += 1
-                aio_ds += stats[p][d]
+            if p in openstack_salt_formulas or p == 'salt-models/mcp-virtual-aio':
+                pfpd += 1
+                pf_ds += stats[p][d]
+            if p in openstack_salt_formulas:
+                fpd += 1
+                f_ds += stats[p][d]
+            if p in pkg_projects:
+                ppd += 1
+                p_ds += stats[p][d]
+            if p == 'mk/cookiecutter-templates':
+                cpd += 1
+                c_ds += stats[p][d]
+            if p == 'salt-models/reclass-system':
+                rpd += 1
+                r_ds += stats[p][d]
             else:
                 mpd += 1
                 m_ds += stats[p][d]
@@ -90,12 +111,24 @@ for d in days:
     print '    Day {} - patch_sets {}'.format(d,stats_days[d])
 print '    Total in ALL projects {} - {} is {}'.format(d_start,d_end,period_sum)
 
-if aio_ds > 0:
-    print '    Total in formulas + packages {}'.format(aio_ds)
-    print '    Mean per day in formulas + packages {}'.format(aio_ds / apd)
+if pf_ds > 0:
+    print '    Total in formulas + mcp-virtual-aio {}'.format(pf_ds)
+    print '    Mean per day in formulas + mcp-virtual-aio {}'.format(pf_ds / pfpd)
+if f_ds > 0:
+    print '    Total in formulas {}'.format(f_ds)
+    print '    Mean per day in formulas {}'.format(f_ds / fpd)
+if p_ds > 0:
+    print '    Total in packages {}'.format(p_ds)
+    print '    Mean per day in packages {}'.format(p_ds / ppd)
+if c_ds > 0:
+    print '    Total in cookiecutter-templates {}'.format(c_ds)
+    print '    Mean per day in cookiecutter-templates {}'.format(c_ds / cpd)
+if r_ds > 0:
+    print '    Total in reclass-system {}'.format(r_ds)
+    print '    Mean per day in reclass-system {}'.format(r_ds / cpd)
 if m_ds > 0:
-    print '    Total in models projects {}'.format(m_ds)
-    print '    Mean per day in models projects {}'.format(m_ds / mpd)  
+    print '    Total in reclass-system + cookiecutter-templates projects {}'.format(m_ds)
+    print '    Mean per day in reclass-system + cookiecutter-templates projects {}'.format(m_ds / mpd)
 
 
 if args.per_project:
