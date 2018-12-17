@@ -84,6 +84,8 @@ cpd = 0
 c_ds = 0
 rpd = 0
 r_ds = 0
+apd = 0
+a_ds = 0
 for d in days:
     stats_days[d] = 0
     for p in projects:
@@ -103,6 +105,9 @@ for d in days:
             if p == 'salt-models/reclass-system':
                 rpd += 1
                 r_ds += stats[p][d]
+            if p == 'salt-models/mcp-virtual-aio':
+                apd += 1
+                a_ds += stats[p][d]
             else:
                 mpd += 1
                 m_ds += stats[p][d]
@@ -114,6 +119,9 @@ print '    Total in ALL projects {} - {} is {}'.format(d_start,d_end,period_sum)
 if pf_ds > 0:
     print '    Total in formulas + mcp-virtual-aio {}'.format(pf_ds)
     print '    Mean per day in formulas + mcp-virtual-aio {}'.format(pf_ds / pfpd)
+if a_ds > 0:
+    print '    Total in mcp-virtual-aio {}'.format(a_ds)
+    print '    Mean per day in mcp-virtual-aio {}'.format(a_ds / apd)
 if f_ds > 0:
     print '    Total in formulas {}'.format(f_ds)
     print '    Mean per day in formulas {}'.format(f_ds / fpd)
