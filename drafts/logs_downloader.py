@@ -1,12 +1,24 @@
 #!/usr/bin/env python
 
-import requests
-from bs4 import BeautifulSoup
-import os
-import zipfile
-import tarfile
 import argparse
+from bs4 import BeautifulSoup
+import logging
+import os
+import requests
+import subprocess
+import tarfile
+import tempfile
+import time
+import zipfile
+
 from urllib.parse import urlparse
+
+logger = logging.getLogger("logs_downloader")
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -25,12 +37,49 @@ def parse_args():
             )
     return parser.parse_args()
 
+def run_cmd(popenargs,
+            return_stdout=False,
+            return_stderr=False,
+            check=True,
+            timeout=None,
+            **kwargs):
+    """Run subprocess and write output to tmp files"""
+    def _get_output(out_file, return_out=False):
+        out = []
+        out_file.seek(0)
+        for line in out_file:
+            l = line.decode().strip()
+            logger.info(l)
+            if return_out:
+                out.append(l)
+        return out
+    out = []
+    err = []
+    with tempfile.NamedTemporaryFile(delete=True) as errf:
+        with tempfile.NamedTemporaryFile(delete=True) as outf:
+            try:
+                logger.info(f"Running command: {popenargs}, started at {time.ctime(time.time())}")
+                child = subprocess.run(popenargs, stdout=outf, stderr=errf, timeout=timeout, check=check, **kwargs)
+                logger.info(f"Finished command: {popenargs} at {time.ctime(time.time())}")
+                res = child.returncode
+            finally:
+                logger.info("Command STDOUT:")
+                out = _get_output(outf, return_stdout)
+                logger.info("Command STDERR:")
+                err = _get_output(errf, return_stderr)
+    return (res, out, err)
+
+def run_tar_extract(archive, path):
+    try:
+        run_cmd(["tar", "-C", path, "-xvf", archive], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.warning(f"Got exception {e} while running tar")
 
 args = parse_args()
 base_url = args.url
 
 if base_url.endswith('/'):
-    base_url = url[:-1]
+    base_url = base_url[:-1]
 
 base_path = urlparse(base_url).path.split('/')[:-1]
 base_len = len(base_path)
@@ -62,6 +111,8 @@ def download_url(url, path):
 
 all_links = get_nested_links(base_url + "/")
 
+print(all_links)
+
 for l in all_links:
     path = urlparse(l).path
     f_name = os.path.basename(path)
@@ -84,8 +135,7 @@ for l in all_links:
             zip_ref.extractall(f"{tdir_path}/")
         remove_src = True
     if f_name.endswith('.tar.gz'):
-        with tarfile.open(log_file_path,"r") as tar_ref:
-            tar_ref.extractall(f"{tdir_path}/")
+        run_tar_extract(log_file_path, f"{tdir_path}/")
         remove_src = True
     if remove_src:
         os.remove(log_file_path)
